@@ -1,0 +1,14 @@
+# Trivy findings that are deliberate. Each entry says why.
+misconfigurations:
+  - id: AWS-0178
+    paths:
+      - examples/basic/main.tf
+      - examples/complete/main.tf
+      - tests/fixtures/same_run/main.tf
+    statement: >-
+      VPC Flow Logs. The module creates no VPC. The examples build a small VPC only
+      to have subnets and route tables for the NAT gateways, and launch no
+      instances in it; flow logs belong in the configuration of the real VPC, such
+      as the flow_log input of the Automate the Cloud VPC module. The test fixture
+      creates a VPC only so that IDs are unknown at plan time, and runs against
+      mocked providers.

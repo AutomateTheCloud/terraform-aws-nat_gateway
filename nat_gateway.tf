@@ -1,12 +1,19 @@
+# Copyright 2025 Automate the Cloud Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+# One NAT gateway for each entry in var.nat_gateways. for_each uses the map keys, which
+# come from the inputs, so removing one NAT gateway leaves the others alone.
 resource "aws_nat_gateway" "this" {
-  count         = (length(var.subnet_ids_nat_residency))
-  allocation_id = (local.multi_az_enabled ? aws_eip.this[count.index].id : aws_eip.this[0].id)
-  subnet_id     = data.aws_subnet.nat_residency[count.index].id
-  tags = merge(
-    local.tags,
-    tomap({
-      "Name" = "${data.aws_vpc.this.tags["Name"]}${local.multi_az_enabled ? ("-${count.index + 1}") : ""}"
-    })
+  for_each = var.nat_gateways
+  region   = var.region
+
+  subnet_id         = each.value.subnet_id
+  connectivity_type = each.value.connectivity_type
+  allocation_id = (
+    each.value.connectivity_type != "public" ? null :
+    each.value.existing_eip != null ? each.value.existing_eip.allocation_id :
+    aws_eip.this[each.key].allocation_id
   )
-  provider = aws.this
+
+  tags = merge(local.tags, { Name = local.nat_gateway_names[each.key] })
 }

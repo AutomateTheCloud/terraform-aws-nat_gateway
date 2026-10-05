@@ -1,11 +1,12 @@
+# Copyright 2025 Automate the Cloud Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+# One Elastic IP address for each public NAT gateway that does not bring its own.
 resource "aws_eip" "this" {
-  count = (length(var.subnet_ids_nat_residency))
+  for_each = local.eips
+  region   = var.region
+
   domain = "vpc"
-  tags = merge(
-    local.tags,
-    tomap({
-      "Name" = "nat_gateway-${data.aws_vpc.this.tags["Name"]}${local.multi_az_enabled ? ("-${count.index + 1}") : ""}"
-    })
-  )
-  provider = aws.this
+
+  tags = merge(local.tags, { Name = local.nat_gateway_names[each.key] })
 }

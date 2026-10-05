@@ -1,12 +1,13 @@
+# Copyright 2025 Automate the Cloud Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+# A route to a NAT gateway in each route table listed. for_each uses the map keys, which
+# come from the inputs, so a route table created in the same run still plans.
 resource "aws_route" "this" {
-  count                  = var.enable_routes ? length(var.subnet_ids_nat_usage) : 0
-  route_table_id         = data.aws_route_table.nat_usage[count.index].route_table_id
-  destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id = (
-    local.multi_az_enabled ?
-    lookup(local.nat_gateway_map, lookup(local.subnet_nat_residency_az_map, data.aws_subnet.nat_usage[count.index].availability_zone, ""), "")
-    :
-    aws_nat_gateway.this[0].id
-  )
-  provider = aws.this
+  for_each = var.routes
+  region   = var.region
+
+  route_table_id         = each.value.route_table_id
+  destination_cidr_block = each.value.destination_cidr_block
+  nat_gateway_id         = aws_nat_gateway.this[each.value.nat_gateway].id
 }
